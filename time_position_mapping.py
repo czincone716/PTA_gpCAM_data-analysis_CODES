@@ -23,14 +23,14 @@ from scipy.optimize import NonlinearConstraint
 from gpcam import GPOptimizer
 from gpcam.kernels import get_distance_matrix, matern_kernel_diff1
 
-bluesky_PATH = '/nsls2/data/cms/shared/config/bluesky/profile_collection/users/2026-1/KChen-Wiegart/2026C1/'
-queue_PATH   = '/nsls2/data/cms/shared/config/bluesky/profile_collection/users/2026-1/KChen-Wiegart/2026C1/'
+bluesky_PATH = '/nsls2/data/cms/shared/config/bluesky/profile_collection/users/2026-2/KCWiegart'    #CARLY
+queue_PATH   = '/nsls2/data/cms/shared/config/bluesky/profile_collection/users/2026-2/KCWiegart'    #CARLY
 queue_PATH in sys.path or sys.path.append(queue_PATH)
 from CustomQueue import Queue_decision
 
 filename_format = '%Y-%m-%d_%H-%M-%S'
 
-Abs_Path      = '/nsls2/data/cms/proposals/2026-1/pass-319051/experiments/2_PTA/data/'
+Abs_Path      = '/nsls2/data/cms/shared/config/bluesky/profile_collection/users/2026-2/KCWiegart' #CARLY
 CMSsaves_dir  = os.path.join(Abs_Path, 'CMSsaves/')
 CMStotals_dir = os.path.join(Abs_Path, 'CMStotals/')
 
@@ -45,9 +45,10 @@ time_buffer      = 5.         # buffer for GP optimization time [s]
 measurement_cost = 15         # time per measurement including alignment [s]
 
 # Bounds: x in [0, 30] mm, time in [0, 2*end_of_time] s
-# Time upper bound extends to 2x for GP stability (experiment is killed at end_of_time)
-bounds = np.array([[1., 30.],
-                   [0., 2. * end_of_time]])
+# Time upper bound extends to 2x for GP stability (experiment is killed at end_of_time), the model searches the universe, so that does not matter.
+bounds = np.array([[1., 30.], #travel distance in mm
+                   [0., end_of_time]]) #time duration in s
+ask_horizon = 2 * 60.    # how far into the future we allow [s]  tune as you like
 
 init_N = 5 # number of random measurements before GP kicks in
 
@@ -66,7 +67,7 @@ hps_bounds = np.array([
 ])
 
 # Iteration indices at which to retrain hyperparameters
-training_at = [10, 20, 30]
+training_at = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] 
 
 
 ##################################################
@@ -88,7 +89,7 @@ def kernel(x1, x2, hps):
 def cost(origin, x, arguments=None):
     """
     Time-based cost: waiting time + measurement overhead.
-    Points in the past (time < current) are assigned a prohibitive cost.
+    Points in the past (time < current) are assigned a prohibitive cost.714.29267619
     """
     t = np.abs(x[:, 1] - origin[1]) + measurement_cost
     past = np.where(origin[1] > x[:, 1])
@@ -241,21 +242,38 @@ def build_GP(x_data, y_data, variance_data=None):
 
 def initial_AE():
     """Pick a random starting position. Time = 0 (beamline records actual elapsed time)."""
+    print('='*50)
+    print(f'bounds: {bounds}')
+    print('='*50)
     x_pos = np.random.uniform(bounds[0, 0], bounds[0, 1])
     new_result = {'position': [x_pos, 0.], 'measured': False, 'analyzed': False}
     return [new_result]
 
 
-def nominal_AE(data, my_gp, N):
+def nominal_AE(data, my_gp, N, tell=True):
     """Tell the latest measurement to the GP, then ask for the next position."""
 
-    new_x        = [[data[0]['position'][0], data[0]['position'][1]]]
-    new_y        = [data[0]['value'][0]]
-    new_variance = [data[0]['variance'][0]]
+    # new_x        = [[data[0]['position'][0], data[0]['position'][1]]]
+    # new_y        = [data[0]['value'][0]]
+    # new_variance = [data[0]['variance'][0]]
 
-    print(f"nominal_AE (N={N}): telling point {new_x}, value {new_y}")
-    my_gp.tell(np.asarray(new_x), np.asarray(new_y),
-               noise_variances=np.asarray(new_variance), append=True)
+    # print(f"nominal_AE (N={N}): telling point {new_x}, value {new_y}")
+    # my_gp.tell(np.asarray(new_x), np.asarray(new_y),
+    #            noise_variances=np.asarray(new_variance), append=True)
+
+    ### AI suggest to correct the ordering bug for the duplicate points in the gp list and the next suggestion point
+    if tell:
+        new_x        = [[data[0]['position'][0], data[0]['position'][1]]]
+        new_y        = [data[0]['value'][0]]
+        new_variance = [data[0]['variance'][0]]
+        print(f"nominal_AE (N={N}): telling point {new_x}, value {new_y}")
+        my_gp.tell(np.asarray(new_x), np.asarray(new_y),
+                   noise_variances=np.asarray(new_variance), append=True)
+    else:
+        print(f"nominal_AE (N={N}): skipping tell (point already in GP from build)")
+    ####
+
+    
 
     if N in training_at:
         print('=' * 40)
@@ -268,8 +286,19 @@ def nominal_AE(data, my_gp, N):
     # Rebuild constraint from the latest GP data point
     nlc = make_constraint(my_gp)
 
+    current_time = float(my_gp.x_data[-1, 1])
+
+    new_bounds = np.array([
+        [1., 30.],                                   # x range unchanged [mm]
+        [current_time + time_buffer,                 # earliest: now + GP-optimization buffer
+         min(current_time + ask_horizon,             # latest: now + horizon...
+             end_of_time)]                          # ...but never beyond the global bound
+    ])
+    print('='*50)
+    print(f'new_bounds: {new_bounds}')
+    print('='*50)
     suggestion = my_gp.ask(
-        bounds,
+        new_bounds,
         n                    = 1,
         acquisition_function = 'variance',
         method               = 'global',
@@ -290,6 +319,9 @@ def loop(queue, N_max=20000):
 
     # Send initial random measurement to beamline
     data = initial_AE()
+    print('='*50)
+    print(f'first random initialization : {data}')
+    print('='*50)
     queue.publish(data)
 
     my_gp = None
@@ -308,22 +340,39 @@ def loop(queue, N_max=20000):
             print("cms data save")
             saveCMS(data) #Carly
             data = initial_AE()
+            print('='*50)
+            print(f'After random initialization : {data}')
+            print('='*50)
 
+        # else:
+        #     if my_gp is None:
+        #         saveCMS(data)
+        #         doCMSsave = False
+        #         # First GP build: load all previously saved data (current point NOT yet saved)
+        #         # so get_all_data() does not see the current point  avoids duplicate tell()
+        #         x_data, y_data, variance_data = get_all_data()
+        #         my_gp = build_GP(x_data, y_data, variance_data)
+        #         print(f'After 1st build :{x_data}')
+
+        #     # Save current point AFTER building GP, then tell it via nominal_AE
+        #     if doCMSsave:
+        #         saveCMS(data)
+        #     data = nominal_AE(data, my_gp, N)
+        #     print(f'After 1st suggestion : {data}')
+
+        ### AI suggest to correct the ordering bug for the duplicate points in the gp list and the next suggestion point
         else:
-            if my_gp is None:
+            first_build = my_gp is None
+            if first_build:
                 saveCMS(data)
-                doCMSsave = False
-                # First GP build: load all previously saved data (current point NOT yet saved)
-                # so get_all_data() does not see the current point  avoids duplicate tell()
                 x_data, y_data, variance_data = get_all_data()
                 my_gp = build_GP(x_data, y_data, variance_data)
-                print(f'After 1st build :{x_data}')
-
-            # Save current point AFTER building GP, then tell it via nominal_AE
-            if doCMSsave:
+            else:
                 saveCMS(data)
-            data = nominal_AE(data, my_gp, N)
+
+            data = nominal_AE(data, my_gp, N, tell=not first_build)
             print(f'After 1st suggestion : {data}')
+
         queue.publish(data)
         print(f"{Fore.RED}==== Loop (N={N}): published next position ===={Style.RESET_ALL}")
         N += 1

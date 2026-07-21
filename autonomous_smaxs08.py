@@ -26,7 +26,7 @@ from SciAnalysis.XSAnalysis import Protocols
 import time
 
 FITTING_PLAN = 'circular_average_q2I_fit_FWHM' #CZ
-EXTRACTION = 'fit_peaks_fwhm1'
+EXTRACTION = 'fit_peaks_x_center1' #CZ
 
 # Define some custom analysis routines
 ########################################
@@ -2167,6 +2167,7 @@ def autonomous_result(xml_file, clean=True, verbosity=3):
 import yaml
 
 # /nsls2/data/cms/proposals/2026-1/pass-319051/experiments/2_PTA/data
+#nsls2/data/cms/proposals/2026-2/pass-319051/experiments/2_PTA/PTA-codes/caliMS.yaml
 
 with open('caliMS.yaml', 'r') as f:  # Carly
     cfg = yaml.safe_load(f)
@@ -2182,14 +2183,14 @@ calibration.set_distance(cfg["distance"])
 mask_dir = SciAnalysis_PATH + '/SciAnalysis/XSAnalysis/masks/'
 mask = Mask(mask_dir + 'Dectris/Pilatus800k2_gaps-mask.png')
 # mask.load('./mask3.png')
-mask.load('./combined_mask_MAXS_PTA2.png')  # Carly
+mask.load('./combined_mask_MAXS.png')  # Carly
 
 # Files to analyze
 ########################################
-source_dir = '../maxs/raw/'  # Carly
-# output_dir = '../waxs/analysis/'
-waxs_output_dir = '../maxs/analysis/'  # Carly
+source_dir = './maxs/raw/'  # Carly
 
+# output_dir = '../waxs/analysis/'
+waxs_output_dir = './maxs/analysis/'  # Carly
 pattern = '*'
 
 infiles = glob.glob(os.path.join(source_dir, pattern + '.tiff'))
@@ -2275,7 +2276,8 @@ patterns = [
 # qp1, dqp1 = 3.5, 0.15 # Ni (2 0 0) peak
 
 # Mar. 2026
-qp1, dqp1 = 3.52, 0.06  # Ni3Al (0 0 2) peak
+#qp1, dqp1 = 3.52, 0.06  # Ni3Al (0 0 2) peak
+qp1, dqp1 = 3.58, 0.15  # Ni-Cu ss
 
 protocols = [
     # Protocols.HDF5(save_results=['hdf5'])
@@ -2298,12 +2300,12 @@ protocols = [
     #circular_average_q2I_fit_sorted('circular_average_q2I_fit_sorted', plot_range=[3.3, 3.7, 0, None], q0=qp1,
     #                                fit_range=[qp1 - dqp1, qp1 + dqp1], num_curves=1),
     
-    circular_average_q2I_fit_FWHM('circular_average_q2I_fit_FWHM', plot_range=[2.8, 3.3, 0, None], q0=3.07,
-    fit_range=[3.07 - 0.08, 3.07 + 0.08], num_curves=1),      
+    circular_average_q2I_fit_FWHM('circular_average_q2I_fit_FWHM', plot_range=[0.5, 5, 0, None], q0=qp1,
+    fit_range=[qp1-dqp1, qp1+dqp1], num_curves=1),      
     
     ###changed protocol to include changing width fraction CZ
-    circular_average_q2I_fit_FWHM('circular_average_q2I_fit_FWHM', plot_range=[2.8, 3.3, 0, None],
-    q0=3.07, fit_range=[3.07-0.08, 3.07+0.08], num_curves=1, width_fraction=0.20),
+   #circular_average_q2I_fit_FWHM('circular_average_q2I_fit_FWHM', plot_range=[2.8, 3.3, 0, None],
+    #q0=3.07, fit_range=[3.07-0.08, 3.07+0.08], num_curves=1, width_fraction=0.20),
     
     # Protocols.databroker_extract(constraints={'measure_type':'measure'}, timestamp=True, sectino='start'),
     Protocols.metadata_extract(patterns=patterns),
@@ -2327,7 +2329,7 @@ protocols = [
 ##########CARLY TO CHANGE
 import yaml
 
-with open('caliXS.yaml', 'r') as f:
+with open('caliXS.yaml', 'r') as f: #carly change what's in '' for here and WAXS cali yml file
     cfg = yaml.safe_load(f)
 
 calibration_saxs = Calibration(wavelength_A=cfg["wavelength_A"])
@@ -2339,11 +2341,11 @@ calibration_saxs.set_distance(cfg["distance"])
 mask_dir_saxs = SciAnalysis_PATH + '/SciAnalysis/XSAnalysis/masks/'
 mask_saxs = Mask(mask_dir_saxs + 'Dectris/Pilatus2M_gaps-mask.png')
 # mask_saxs.load('./Pilatus2M_current-mask.png')
-mask_saxs.load('./combined_mask_SAXS2.png')
+mask_saxs.load('./combined_mask_SAXS.png')
 
-source_dir = '../saxs/raw/'
+source_dir = './saxs/raw/'
 # output_dir = '../saxs/analysis/'
-saxs_output_dir = '../saxs/analysis/'
+saxs_output_dir = './saxs/analysis/'
 
 pattern = '*'
 
@@ -2554,7 +2556,7 @@ def get_analysis_result(infile, protocol=FITTING_PLAN, verbosity=3):
 
     # Get XML filename (replace .tiff with .xml)
     # xml_file = infile.replace('.tiff', '.xml').replace('../waxs/raw/', '/analysis_swaxs/results/')
-    xml_file = infile.replace('.tiff', '.xml').replace('./maxs/raw/', '../maxs/analysis/results/')
+    xml_file = infile.replace('.tiff', '.xml').replace('./maxs/raw/', './maxs/analysis/results/')
 
 
     ################################################################################################
@@ -2568,7 +2570,7 @@ def get_analysis_result(infile, protocol=FITTING_PLAN, verbosity=3):
         # Beamline filename example: ..._x12.183_th0.200_1260.9s_2048356_000000_waxs.xml
         # Parse TIME and X-POSITION from the filename (position represents temperature)
         parts =infile.split('_')
-        time = int(parts[-8]) #fix this
+        time = float(parts[-7].replace('s', '')) #fix this
         x_pos = float(parts[-6].replace('x', '')) #fix this
 
         # Load scattered mock data: columns time, x_position, fwhm, fwhm_err
@@ -2585,15 +2587,15 @@ def get_analysis_result(infile, protocol=FITTING_PLAN, verbosity=3):
         interp_err = LinearNDInterpolator(pts, df['fwhm_err'].values)
 
         # interpolate FWHM and its error at the requested (position, time)
-        value = float(interp_fwhm(x_pos, t_val))
-        error = float(interp_err(x_pos, t_val))
+        value = float(interp_fwhm(x_pos, time))
+        error = float(interp_err(x_pos, time))
 
 
 
         # random fallback only when asked outside the measured region (NaN)
         if np.isnan(value):
             value = np.random.uniform(0.09, 0.13)
-            print(f"Warning: Requested (x={x_pos}, t={t_val}) outside measured region. Using random fallback value {value:.4f}.")   
+            print(f"Warning: Requested (x={x_pos}, t={time}) outside measured region. Using random fallback value {value:.4f}.")
         if np.isnan(error) or error <= 0:
             error = value * 0.05
 
@@ -2726,7 +2728,7 @@ def get_analysis_result_saxs_old(infile, protocol='sum_p1', verbosity=3):
 
 def get_analysis_result_saxs(infile, protocol='linecut_qr_kratky', verbosity=3):
     # xml_file = infile.replace('.tiff', '.xml').replace('/saxs/raw/', '/analysis_swaxs/results/')
-    xml_file = infile.replace('.tiff', '.xml').replace('./saxs/raw/', '../saxs/analysis/results/')
+    xml_file = infile.replace('.tiff', '.xml').replace('./saxs/raw/', './saxs/analysis/results/')
 
     try:
         # Use ResultsXML extractor (same as Result.py does internally)
@@ -2893,7 +2895,7 @@ def run_autonomous_loop_tiled(protocols, clear=False, force_load=False, republis
     # This is a tiled version of the AE loop that read data from the tiled client instead of waiting for files to appear in the directory.
 
     from tiled.client import from_profile
-    tiled_client = cat = from_profile("nsls2", username=None)["cms/migration"]
+    tiled_client = cat = from_profile("nsls2", username=None)["cms/raw"]
 
     from CustomQueue import Queue_analyze as queue
     q = queue()
@@ -2936,7 +2938,7 @@ def run_autonomous_loop_tiled(protocols, clear=False, force_load=False, republis
                 ianalyze += 1
 
                 infile_uid = result['uid']
-                time.sleep(45)
+                time.sleep(5)
                 data = tiled_client[infile_uid]
                 print(f"Received analysis command for UID: {data.start['uid']}, filename: {data.start['filename']}")
 
@@ -2944,25 +2946,43 @@ def run_autonomous_loop_tiled(protocols, clear=False, force_load=False, republis
                 maxs_data = None  # Carly
 
                 try:
-                    saxs_data = data.primary["pilatus2m-1_image"]
+                    saxs_data = data.primary.data["pilatus2m-1_image"]
                     print(f"saxs_data_size is {saxs_data.shape}")
                 except KeyError:
-                    print(f"no saxs data found for result {i}")
+                    try:
+                        saxs_data = data.primary["pilatus2m-1_image"]
+                        print(f"saxs_data_size is {saxs_data.shape}")
+                    except KeyError:
+                        print(f"no saxs data found for result {i}")
+                    except Exception as e:
+                        print(f"error retrieving saxs data for result {i}: {e}")
+
+                except Exception as e:
+                    print(f"error retrieving saxs data for result {i}: {e}")
 
                 try:
-                    maxs_data = data.primary["pilatus800k-2_image"]  # Carly
+                    maxs_data = data.primary.data["pilatus800k-2_image"]  # Carly
                     print(f"maxs_data_size is {maxs_data.shape}")
                 except KeyError:
-                    print(f"no waxs data found for result {i}")
+                    try:
+                        maxs_data = data.primary["pilatus800k-2_image"]  # Carly
+                        print(f"maxs_data_size is {maxs_data.shape}")
+                    except KeyError:
+                        print(f"no waxs data found for result {i}")
+                    except Exception as e:
+                        print(f"error retrieving waxs data for result {i}: {e}")
 
-                while len(saxs_data.shape) == 4 or len(maxs_data.shape) == 4:
-                    time.sleep(5)
+                except Exception as e:
+                    print(f"error retrieving waxs data for result {i}: {e}")
 
-                    saxs_data = data.primary["pilatus2m-1_image"]
-                    print(f"saxs_data_size is {saxs_data.shape}")
+                # while len(saxs_data.shape) == 4 or len(maxs_data.shape) == 4:
+                #     time.sleep(5)
 
-                    maxs_data = data.primary["pilatus800k-2_image"]  # Carly
-                    print(f"maxs_data_size is {maxs_data.shape}")
+                #     saxs_data = data.primary.data["pilatus2m-1_image"]
+                #     print(f"saxs_data_size is {saxs_data.shape}")
+
+                #     maxs_data = data.primary.data["pilatus800k-2_image"]  # Carly
+                #     print(f"maxs_data_size is {maxs_data.shape}")
 
                 # Save saxs_data and maxs_data to temporary tiff files for SciAnalysis processor
                 infile = None
@@ -3034,10 +3054,15 @@ def run_autonomous_loop_tiled(protocols, clear=False, force_load=False, republis
                 variance = None
                 value_saxs = None
                 variance_saxs = None
-
+                print('='*30)
+                print(f'Infiles_len: {len(infiles)}')
+                print(f'Infile: {infile}')
+                print(f'Infile_saxs: {infile_saxs}')
+                print('='*30)
                 if infile is not None and infile_saxs is not None:
                     print('Doing MAXS...')
                     process.run([infile], protocols, output_dir=waxs_output_dir, force=True)
+                    print(f"Saved WAXS data to file: {waxs_output_dir}/{infile}")
                     time.sleep(1)  # Give some time for file to be fully written
                     value, variance, d = get_analysis_result(infile, verbosity=verbosity)
                     value = max(value, 1e-9)
@@ -3047,6 +3072,7 @@ def run_autonomous_loop_tiled(protocols, clear=False, force_load=False, republis
 
                     print('Doing SAXS...')
                     process_saxs.run([infile_saxs], protocols_saxs, output_dir=saxs_output_dir, force=True)
+                    print(f"Saved SAXS data to file: {saxs_output_dir}/{infile_saxs}")
                     time.sleep(1)  # Give some time for file to be fully written
                     value_saxs, variance_saxs, d = get_analysis_result_saxs(infile_saxs, verbosity=verbosity)
                     value_saxs = max(value_saxs, 1e-9)
@@ -3097,7 +3123,7 @@ def test_analysis(protocols, clear=False, force_load=False, republish=False, ver
 
     # This is a tiled version of the AE loop that read data from the tiled client instead of waiting for files to appear in the directory.
     from tiled.client import from_profile
-    tiled_client = cat = from_profile("nsls2", username=None)["cms/migration"]
+    tiled_client = cat = from_profile("nsls2", username=None)["cms/raw"]
 
     from CustomQueue import Queue_analyze as queue
     q = queue()

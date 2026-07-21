@@ -7,8 +7,6 @@
 
 #######
 
-# def single_plan_per(a, b, c, d, e):
-#     pass
 
 ################################################################################
 #  Short-term settings (specific to a particular user/experiment) can
@@ -20,7 +18,6 @@ from ophyd import Device, Component as Cpt, EpicsSignal, EpicsSignalRO
 from bluesky.suspenders import SuspendFloor
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
-import os
 
 import sympy as sym
 
@@ -28,22 +25,16 @@ print(f"Loading {__file__!r} ...")
 
 
 # cms.SAXS.setCalibration([738, 1100], 3.83, [-65, -73])
-cms.SAXS.setCalibration([742, 1081], 5.9, [-65, -73])  #vacuum
-# cms.SAXS.setCalibration([742, 1127], 5.9, [-65, -65])  #vacuum
-
+cms.SAXS.setCalibration([754, 1084], 5.8, [-65, -73])   #5m,13.5kev, May2024
 
 
 # RE.md['experiment_group'] = 'MNoack'
-# RE.md["experiment_group"] = "K. Chen-Wiegart"
+RE.md["experiment_group"] = "K. Chen-Wiegart"
 # RE.md['experiment_alias_directory'] = '/nsls2/xf11bm/data/2020_3/MNoack/Exp1/'
-RE.md["experiment_alias_directory"] = "1_PTA"
-# RE.md["experiment_user"] = "TBD"
-# RE.md["experiment_type"] = "GIAXS"
-# RE.md["experiment_project"] = "TBD"
-
-# RE.md['experiment_alias_directory'] = '2_PTA'
-RE.md["userpy_alias_directory"] = '/nsls2/data/cms/shared/config/bluesky/profile_collection/users/2026-2/KChen-Wiegart'
-
+RE.md["experiment_alias_directory"] = "/nsls2/data/cms/legacy/xf11bm/data/2025_2/KChen-Wiegart/"
+RE.md["experiment_user"] = "TBD"
+RE.md["experiment_type"] = "GIAXS"
+RE.md["experiment_project"] = "TBD"
 
 
 smz = EpicsMotor("XF:11BMB-ES{Chm:Smpl2-Ax:Z}Mtr", name="smz")
@@ -74,36 +65,30 @@ laserx = EpicsMotor("XF:11BMB-ES{PTA:Laser-Ax:X}Mtr", name="laserx")
 #     MAXSbsx.move(-7)
 #     MAXSbsy.move(0)
 
-def saxs_on_alignment():
 
-    SAXSy.move(-73)
-
-    # MAXSx.move(-80)
-    # MAXSy.move(-120)
-    detselect([pilatus2M])
 
 def smaxs_on():
     # MAXSx.move(-40)
     # MAXSy.move(-20)
-    MAXSx.move(0)
-    MAXSy.move(-132)
+    MAXSx.move(-55)
+    MAXSy.move(-116)
 
-    SAXSy.move(-73)
+    SAXSy.move(-60)
     cms.setDirectBeamROI()
     detselect([pilatus2M, pilatus8002])
 
 
 def saxs_on():
-    MAXSx.move(0)
-    MAXSy.move(-132)
+    MAXSx.move(-50)
+    MAXSy.move(-116)
     detselect([pilatus2M])
 
-    SAXSy.move(-73)
+    SAXSy.move(-65)
 
 
 def maxs_on():
-    MAXSx.move(0)
-    MAXSy.move(-132)
+    MAXSx.move(-55)
+    MAXSy.move(-116)
     detselect([pilatus8002])
     
 
@@ -1149,7 +1134,7 @@ class Sample(SampleGISAXS):
                 # value_name = get_beamline().TABLE_COLS[0]
                 beam.on()
                 RE(count([detector]))
-                value = detector.read()["pilatus2m-1_stats4_total"]["value"]
+                value = detector.read()["pilatus2M_stats4_total"]["value"]
                 self.yr(0.5)
 
             # if 'beam_intensity_expected' in RE.md:
@@ -1347,7 +1332,7 @@ class Sample(SampleGISAXS):
                 # value_name = get_beamline().TABLE_COLS[0]
                 beam.on()
                 RE(count([detector]))
-                value = detector.read()["pilatus2m-1_stats4_total"]["value"]
+                value = detector.read()["pilatus2M_stats4_total"]["value"]
                 # self.yr(0.5)
 
             # if 'beam_intensity_expected' in RE.md:
@@ -1515,7 +1500,7 @@ class Sample(SampleGISAXS):
                 RE(shutter_on())
                 # RE(beam.on())
                 RE(count([detector]))
-                value = detector.read()["pilatus2m-1_stats4_total"]["value"]
+                value = detector.read()["pilatus2M_stats4_total"]["value"]
                 self.yr(1)
 
             # if 'beam_intensity_expected' in RE.md:
@@ -2386,8 +2371,7 @@ class Sample(SampleGISAXS):
                     # detselect(pilatus8002)
                     smaxs_on()
 
-                    # now = ttime.time()
-                    now = self.clock()
+                    now = ttime.time()
                     lag = target_time - now
 
                     if lag > 0:
@@ -2404,7 +2388,6 @@ class Sample(SampleGISAXS):
 
 
                     header = db[-1]  # The most recent measurement
-                    command["uid"] = header.start["uid"]
                     # command['filename'] = '{}'.format(header.start['filename'][:-1])
                     command["filename"] = "{}".format(header.start["filename"])
 
@@ -2459,8 +2442,8 @@ class Sample(SampleGISAXS):
         # self.BMM_clock_list = [300, 600, 1200, 1800, 3600, 5400]
         # self.BMM_clock_list_backup = [300, 600, 1200, 1800, 3600, 5400]
 
-        self.BMM_clock_list = [0, 300, 600, 1200, 1800, 3600, 5400, 7200, 8000]
-        self.BMM_clock_list_backup = [0, 300, 600, 1200, 1800, 3600, 5400, 7200, 8000]
+        self.BMM_clock_list = [0, 300, 600, 1200, 1800, 3600, 5400, 7200]
+        self.BMM_clock_list_backup = [0, 300, 600, 1200, 1800, 3600, 5400, 7200]
 
         self.BMM_laundry_list = []
         if reset_clock==True:
@@ -2547,8 +2530,7 @@ class Sample(SampleGISAXS):
                     # detselect(pilatus8002)
                     smaxs_on()
 
-                    # now = ttime.time()
-                    now = self.clock()
+                    now = ttime.time()
                     lag = target_time - now
 
                     if lag > 0:
@@ -2564,8 +2546,7 @@ class Sample(SampleGISAXS):
                         print('{}Driving to point {}/{}; (x,time) = ({:.3f}, {:.3f})'.format(prefix, imeasure, num_to_measure, target_x, target_time))
 
 
-                    header = cat[-1]  # The most recent measurement
-                    command["uid"] = header.start["uid"]
+                    header = db[-1]  # The most recent measurement
                     # command['filename'] = '{}'.format(header.start['filename'][:-1])
                     command["filename"] = "{}".format(header.start["filename"])
 
@@ -2627,14 +2608,13 @@ class Sample(SampleGISAXS):
                             # single_plan_per(self.name, x_position_BMM, clock_BMM, "back")
                             x_position_BMM = command['x_position'] #TODO: every data points at CMS is sent to BMM. updated at Mar. 5. 25
                             #TODO: it should juse use every data points from gpCAM. 
-                            single_plan_per(self.name, x_position_BMM, clock_BMM, 'back' )
+                            single_plan_per(self.name, x_position_BMM, clock_BMM, BMM_scan_type, 'front' )
                             # single_plan_per(self.name, x_position_BMM, clock_BMM, BMM_scan_type, 'front' )
                             # single_plan_per(self.name, x_position_BMM, clock_BMM, 'xanes', "front")
                             
                             print('BMM_measure_list is : {}'.format(self.BMM_measure_list))
                             #save 
                             df1 = pds.DataFrame(self.BMM_measure_list, columns=['sample_name', 'x', 'BMMclcok', 'CMSclock'])
-                            os.makedirs(RE.md["experiment_alias_directory"]+'/data/', exist_ok=True)
                             df1.to_csv(RE.md["experiment_alias_directory"]+'/data/'+self.name + 'shortlist' , index=False)
 
                     #measurements in low priority 
@@ -2647,248 +2627,14 @@ class Sample(SampleGISAXS):
                     #     self.BMM_laundry_list.append([self.name, xpos, int(clock_BMM), clock])
 
                     df2 = pds.DataFrame(self.BMM_laundry_list, columns=['sample_name', 'x', 'BMMclcok', 'CMSclock'])
-                    os.makedirs(RE.md["experiment_alias_directory"]+'/data/', exist_ok=True)
                     df2.to_csv(RE.md["experiment_alias_directory"]+'/data/'+self.name + 'laundrylist', index=False)
 
                     if self.clock()>max_clock:
                         laserOff()
 
                         #measurements in low priority 
-                        return
 
-            measure_queue.publish(commands)  # Send results for analysis
-
-    def measureAutonomous_withBMM(
-        self,
-        runno=0,
-        exposure_time=10,
-        incident_angle=0.25,
-        extra=None,
-        max_measurements=600000,
-        max_clock=7200+120,
-        reset_clock=True,
-        prefix="measureAutonomous > ",
-        align = True,
-        BMM_scan_type= 'xanes', 
-        # BMM_clock_list = [300, 600, 1200, 1800, 3600, 5400],
-        verbosity=3,
-        **md,
-    ):
-        """Measure points in a loop, relying on an external queue to specify what
-        position to actually measure. If the 'position' is not (x,y) sample coordinates,
-        then you will have to add code to do the appropriate coordinate conversion,
-        or trigger the right beamline motors/components."""
-
-
-        self.x_list = []
-        self.clock_list = []
-        self.BMM_measure_list = []
-        self.BMM_short_list = []
-        # self.BMM_clock_list = [300, 600, 1200, 1800, 3600, 5400]
-        # self.BMM_clock_list_backup = [300, 600, 1200, 1800, 3600, 5400]
-
-        self.BMM_clock_list = [0, 300, 600, 1200, 1800, 3600, 5400, 7200, 8000]
-        self.BMM_clock_list_backup = [0, 300, 600, 1200, 1800, 3600, 5400, 7200, 8000]
-
-        self.BMM_laundry_list = []
-        if reset_clock==True:
-            self.reset_clock()
-
-        for i in range(runno, max_measurements):
-            if verbosity >= 3:
-                print("{}Waiting for AE command on queue...".format(prefix))
-
-            # forceload_repeat = 0
-            # if forceLoad == True:
-            #     commands = measure_queue.get()
-            #     forceload_repeat = 1
-            # elif forceLoad == False or forceload_repeat == 1:
-            commands = measure_queue.get()  # Get measurement command from queue
-            num_to_measure = sum([1.0 for command in commands if command["measured"] is False])
-
-            if verbosity >= 3:
-                # print('{}Received command to measure {} points'.format(num_to_measure))
-                print("{}Received command to measure {} points".format(prefix, num_to_measure))
-
-            imeasure = 0
-            for icommand, command in enumerate(commands):
-                if verbosity >= 5:
-                    print("{}Considering point {}/{}".format(prefix, icommand, len(commands)))
-
-                if not command["measured"]:
-                    imeasure += 1
-                    if verbosity >= 3:
-                        print("{}Measuring point {}/{}".format(prefix, imeasure, num_to_measure))
-
-                    start_time = time.time()
-
-                    ########################################
-                    # Move to point
-                    ########################################
-                    # Here you should define the beamline changes needed to go
-                    # to the desired position. (You shouldn't in general need
-                    # to change code outside of this block.)
-                    ########################################
-
-                    # convert x_pos, yy_pos of stage to x_position, y_position of sample
-                    # yy_pos = -1*command['position']['x_position']
-                    # x_pos = command['position']['y_position']
-
-                    # [x_pos, yy_pos] = command['position']
-                    target_x, target_time = command["position"]
-                    # command['position_gpcam'] = command['position']
-
-                    xpos, ypos, thpos = self.calc_lookuptable(target_x + self.start_x)
-
-                    RE(move_sample_with_laser(xpos))
-                    # yield from move_sample_with_laser(xpos)
-                    # self.yabs(ypos)
-                    # self.thabs(thpos)
-                    sth.move(thpos)
-                    smy.move(ypos)
-                    while smy.moving == True:
-                        time.sleep(1)
-
-                    self.setOrigin(["th", 'y'])
-                    
-                    # yield from bps.mv(smy, ypos, sth, thpos + 0.12)
-
-                    if align:
-                        RE(self._call_fast_align())
-                        #ypos_align, thpos_align = RE(fast_align())
-                        ypos_align, thpos_align = self._ypos_align, self._thpos_align
-                        # ypos_align, thpos_align = yield from fast_align()
-                        sth.move(thpos)
-                        self.setOrigin(["th"])
-                        self.thabs(incident_angle)
-                        # sam.start_x = xpos
-                        # sam.start_y = ypos_align
-                        # sam.start_th = thpos_align
-                        # yield from bps.mv(sth, thpos_align + 0.25 - 0.12)
-                    else:
-                        # yield from bps.mv(sth, thpos+.12)
-                        self.thabs(incident_angle)
-                        # yield from bps.mv(sth, thpos + 0.25)
-
-                    # yield from cms.modeMeasurement_plan()
-                    cms.modeMeasurement()
-                    # detselect(pilatus8002)
-                    smaxs_on()
-
-                    # now = ttime.time()
-                    now = self.clock()
-                    lag = target_time - now
-
-                    if lag > 0:
-                        # yield from bps.sleep(lag)
-                        time.sleep(lag)
-
-                    # detselect([pilatus2M, pilatus8002])
-                    # yield from self.measure(exposure_time, **md)
-                    self.measure(exposure_time, **md)
-
-                    # check it's working
-                    if verbosity>=3:
-                        print('{}Driving to point {}/{}; (x,time) = ({:.3f}, {:.3f})'.format(prefix, imeasure, num_to_measure, target_x, target_time))
-
-
-                    header = cat[-1]  # The most recent measurement
-                    command["uid"] = header.start["uid"]
-                    # command['filename'] = '{}'.format(header.start['filename'][:-1])
-                    command["filename"] = "{}".format(header.start["filename"])
-
-                    command['x_position'] = smx.position - self.start_x # self.xpos(verbosity=0) ##hard coding for the 0.2mm resolution (100 data points in 20mm)
-
-                    command['time_position'] = self.clock() #verbosity=0)
-
-                    command['position'] = [command['x_position'], command['time_position']]
-
-
-                    ########################################
-                    # md['anneal_time'] = self.anneal_time
-                    # md['preanneal_time'] = self.preanneal_time
-
-                    cost_time = time.time() - start_time
-
-                    command["cost"] = cost_time
-
-                    command["measured"] = True
-                    command["analyzed"] = False
-                    
-                    #driving BMM
-                    self.clock_list.append(self.clock())
-                    self.x_list.append(command['x_position'])
-                    
-                    #TODO: to contineously send single_plan_per to BMM for measurements. 
-                    # especially when cloc()<than the BMM-clock-list
-                    if len(self.BMM_clock_list)>0:
-                        print('ready to send command to BMM')
-                        # if self.clock() > self.BMM_clock_list[0]:
-                        print('ready to send command to BMM #2')
-                        print('BMM_clock_list : {}'.format(self.BMM_clock_list))
-                        #pop clock 0:
-
-                        # if self.clock() > self.BMM_clock_list[1]:
-                        if self.clock() > self.BMM_clock_list[0]:   # Cheng-Chu??
-
-                            clock_BMM = self.BMM_clock_list.pop(0)
-                            sequence = 'front'
-                        else:
-                            clock_BMM = self.BMM_clock_list[0]
-                            sequence = 'back'
-                            
-                        print('the  current clock: {}'.format(clock_BMM))
-
-
-                        if clock_BMM<300:
-                            clock_BMM=300
-
-                        #seach the closest clock to clock0
-                        idx, clock = find_nearest(self.clock_list, clock_BMM)
-                        x_position_BMM = self.x_list[idx]
-
-                        print('the current x position: {}'.format(x_position_BMM))
-
-                        command["BMM_measure"] = [self.name, x_position_BMM,  clock_BMM, clock]
-                        self.BMM_measure_list.append([self.name, x_position_BMM,  clock_BMM, clock])
-
-                        print(self.name, x_position_BMM, clock_BMM)
-
-                        
-                        x_position_BMM = command['x_position'] #TODO: every data points at CMS is sent to BMM. updated at Mar. 5. 25
-                        #TODO: it should juse use every data points from gpCAM. 
-
-                        single_plan_per(self.name, x_position_BMM, clock_BMM, "back")
-                        # single_plan_per(self.name, x_position_BMM, clock_BMM, sequence )
-                        # single_plan_per(self.name, x_position_BMM, clock_BMM, BMM_scan_type, 'front' )
-                        # single_plan_per(self.name, x_position_BMM, clock_BMM, 'xanes', "front")
-                        
-                        print('BMM_measure_list is : {}'.format(self.BMM_measure_list))
-                        #save 
-                        df1 = pds.DataFrame(self.BMM_measure_list, columns=['sample_name', 'x', 'BMMclcok', 'CMSclock'])
-                        os.makedirs(RE.md["experiment_alias_directory"]+'/data/', exist_ok=True)
-                        df1.to_csv(RE.md["experiment_alias_directory"]+'/data/'+self.name + 'shortlist' , index=False)
-                        # df1.to_csv(RE.md["experiment_alias_directory"]+'/data/'+self.name + 'shortlist' , index=False)
-
-                    #measurements in low priority 
-                    BMM_clock_list_lowpriority = replace_with_closest(self.clock_list, self.BMM_clock_list_backup)
-                    self.BMM_laundry_list.append([self.name, self.x_list[-1], int(BMM_clock_list_lowpriority[-1]), self.clock_list[-1]])
-
-                    # for clock_BMM, clock, xpos in zip(BMM_clock_list_lowpriority, self.clock_list, self.x_list):
-                        
-                    #     # single_plan_per(self.name, xpos, int(clock_BMM), "back")
-                    #     self.BMM_laundry_list.append([self.name, xpos, int(clock_BMM), clock])
-
-                    df2 = pds.DataFrame(self.BMM_laundry_list, columns=['sample_name', 'x', 'BMMclcok', 'CMSclock'])
-                    os.makedirs(RE.md["userpy_alias_directory"]+'/data/', exist_ok=True)
-                    df2.to_csv(RE.md["userpy_alias_directory"]+'/data/'+self.name + 'laundrylist', index=False)
-
-                    if self.clock()>max_clock:
-                        laserOff()
-
-                        #measurements in low priority 
-
-                        return
+                        break
 
             measure_queue.publish(commands)  # Send results for analysis
 
@@ -3201,15 +2947,15 @@ def fake_coordinated_motionr(mtr1, mtr2, delta, step=0.1):
 # new functions at Mar. 2025
 def changeSample():
     # smx.move(-20)
-    yield from move_sample_with_laser(25)
+    yield from move_sample_with_laser(-22.45)
     yield from bps.mv(smx, -100)
 
 def newSample():
     # yield from bps.mv(smx, 22.4495)
     # yield from bps.mv(laserx,  -65.1505)
 
-    yield from bps.mv(smx, 25)
-    yield from bps.mv(laserx,  -68.778)
+    yield from bps.mv(smx, -22.45)
+    yield from bps.mv(laserx,  -65)
 
 
 def move_sample_with_laser(xpos):
@@ -3241,7 +2987,13 @@ def alignNewSample(start_x = -23.45-0.5):
     sam.setEndPos()
 
 
+def saxs_on_alignment():
 
+    SAXSy.move(-73)
+
+    MAXSx.move(-55)
+    MAXSy.move(-116)
+    detselect([pilatus2M])
 
 
 def alignNewSample_v2(start_x = 23.45+1.5):
@@ -3308,26 +3060,26 @@ def gotoSamxAligned(target_xr=15):
 #     BS = BSQueue()
 
 ## Connect to S3
-# try:
-#     measure_queue
-# except NameError:
-#     ##queue_PATH='../'
-#     queue_PATH='/nsls2/data/cms/legacy/xf11bm/data/2025_1/KChen-Wiegart6/'
-#     queue_PATH in sys.path or sys.path.append(queue_PATH)
-#     from CustomS3 import Queue_measure
-#     measure_queue = Queue_measure()
-
-
-# Connect to Zmq
 try:
     measure_queue
 except NameError:
     ##queue_PATH='../'
-    queue_PATH='/nsls2/data/cms/legacy/xf11bm/data/2025_2/KChen-Wiegart/'
+    queue_PATH='/nsls2/data/cms/legacy/xf11bm/data/2025_1/KChen-Wiegart6/'
     queue_PATH in sys.path or sys.path.append(queue_PATH)
-    # from CustomS3 import Queue_measure
-    from CustomQueue import Queue_measure
-    measure_queue = Queue_measure(check_interupted=False)
+    from CustomS3 import Queue_measure
+    measure_queue = Queue_measure()
+
+
+## Connect to Zmq
+# try:
+#     measure_queue
+# except NameError:
+#     ##queue_PATH='../'
+#     queue_PATH='/nsls2/data/cms/legacy/xf11bm/data/2024_3/KChen-Wiegart6/'
+#     queue_PATH in sys.path or sys.path.append(queue_PATH)
+#     # from CustomS3 import Queue_measure
+#     from CustomQueue import Queue_measure
+#     measure_queue = Queue_measure(check_interupted=False)
 
 
 """
@@ -3452,35 +3204,35 @@ pta.setLaserPower(power)
 
 
 
-# def test_plan(detector=None):
-#     if detector is None:
-#         detector = pilatus2M
-#         # detector = get_beamline().detector[0]
+def test_plan(detector=None):
+    if detector is None:
+        detector = pilatus2M
+        # detector = get_beamline().detector[0]
 
-#     motors_for_table = [smx, smy, sth]
+    motors_for_table = [smx, smy, sth]
 
-#     @bpp.stage_decorator([detector])
-#     @bpp.run_decorator(md={})
-#     @bpp.finalize_decorator(final_plan=shutter_off)
-#     def inner_plan(group=None):
-#         if group:
-#             yield from bps.wait(group)
+    @bpp.stage_decorator([detector])
+    @bpp.run_decorator(md={})
+    @bpp.finalize_decorator(final_plan=shutter_off)
+    def inner_plan(group=None):
+        if group:
+            yield from bps.wait(group)
 
-#         for n in range(10):
-#             t0 = time.time()
-#             # yield from bps.trigger_and_read([detector, *motors_for_table])
-#             yield from bps.trigger_and_read([detector])
-#             print(f"Detection time: {time.time() - t0}")
-#             # yield from bps.sleep(.1)
+        for n in range(10):
+            t0 = time.time()
+            # yield from bps.trigger_and_read([detector, *motors_for_table])
+            yield from bps.trigger_and_read([detector])
+            print(f"Detection time: {time.time() - t0}")
+            # yield from bps.sleep(.1)
 
-#     group_name = "setup_aligment"
-#     yield from bps.abs_set(bsx, cms.bsx_pos + 3, group=group_name)
-#     beam.setTransmission(1e-6)
+    group_name = "setup_aligment"
+    yield from bps.abs_set(bsx, cms.bsx_pos + 3, group=group_name)
+    beam.setTransmission(1e-6)
 
-#     yield from inner_plan(group=group_name)
+    yield from inner_plan(group=group_name)
 
-#     yield from bps.abs_set(bsx, cms.bsx_pos, group=group_name)
-#     yield from bps.wait(group_name)
+    yield from bps.abs_set(bsx, cms.bsx_pos, group=group_name)
+    yield from bps.wait(group_name)
 
 
 # sample_pta = Sample("test")
@@ -3730,8 +3482,6 @@ def fake_fly3(det, mtr, start, stop, step, exp_time):
     print(f"POSITION, TOTAL_ROI2, TOTAL_ROI3, TOTAL_ROI4")
     for n, pos in enumerate(frame_mtr_pos):
         print(f"{pos:11.5f} {total_roi2[n]:11.1f} {total_roi3[n]:11.1f} {total_roi4[n]:11.1f}")
-
-    det.tiff.kind = "hinted"
     print("**********************************************************************")
 
     return frame_mtr_pos, total_roi2, total_roi3, total_roi4
@@ -4256,8 +4006,7 @@ def agent_feedback_time_plan(
 
     yield from cms.modeMeasurement_plan()
 
-    # now = ttime.time()
-    now = self.clock()
+    now = ttime.time()
     lag = target_time - now
 
     if lag > 0:
@@ -5078,7 +4827,7 @@ def create_measurement_list_forBMM(filename = 'b58-04-ScVMnSc-AE'):
     for ind in range(len(df)):
         print(df['CMSclock'][ind])
         # single_plan_per(df['sample_name'][ind], float(df['x'][ind]), int(df['BMMclcok'][ind]), "back")
-        single_plan_per(df['sample_name'][ind], float(df['x'][ind]), int(df['BMMclcok'][ind]), "back")
+        single_plan_per(df['sample_name'][ind], float(df['x'][ind]), int(df['BMMclcok'][ind]), 'exafs', "back")
         time.sleep(.2)
 
 def sampleXscan(exposure_time=10, extra='afterAE_xscan', align=False):
@@ -5092,24 +4841,9 @@ def sampleXscan(exposure_time=10, extra='afterAE_xscan', align=False):
     for target_x in np.arange(sam.start_x, sam.end_x+.1, 0.4):
         xpos, ypos, thpos = sam.calc_lookuptable(target_x)
         RE(move_sample_with_laser(xpos))
-        
-        smy.move(ypos)
-
-        sth.move(thpos+0.15)
-        sam.measure(exposure_time=exposure_time, extra=extra)
-        
         sth.move(thpos+0.2)
+        smy.move(ypos)
         sam.measure(exposure_time=exposure_time, extra=extra)
-        
-        sth.move(thpos+0.25)
-        sam.measure(exposure_time=exposure_time, extra=extra)
-        
-        sth.move(thpos+0.3)
-        sam.measure(exposure_time=exposure_time, extra=extra)
-        
-        sth.move(thpos+0.5)
-        sam.measure(exposure_time=exposure_time, extra=extra)
-        
 
 
 '''
@@ -5176,30 +4910,7 @@ alignment procedure:
 2. 
 
 
-4. scan smx and allocate the x-ray beam on the edge of the clamp, overlapped with laser. Mark the position on 
-5. move smx to allocate the laser and x-ray beam on the edge of sample. 
-      define the start_x and end_x on this sample. 
-      define the beam postion on 
-      modify functions: align position
-6. move samples out to check sample loading/unloading position. 
-      modify functions: changeSample, newSample
-7. 
-
-
-In [42]: sam.name
-Out[42]: 'b65-01-CrCuNiCr_testforSMAXS'
-
-In [40]: sam.start_x,sam.start_y, sam.start_th
-Out[40]: (-21.749999999999996, 11.872, -0.295781250000001)
-
-In [41]: sam.end_x, sam.end_y, sam.end_th
-Out[41]: (8.250500000000002, 12.71, -0.31906250000000114)
-
-
-##access BMM through tiled
-In [168]: from tiled.client import from_uri
-
-In [169]: catalog = from_uri('https://tiled.nsls2.bnl.gov/api/v1/metadata/bmm/raw')
+4. scan smx and allocate the x-ray beam on the edge of the clamp, overlapped with laser. 
 
 
 

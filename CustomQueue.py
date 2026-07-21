@@ -9,15 +9,7 @@ import numpy as np
 
 class CustomQueue():
     
-    def __init__(self, 
-                 from_port, 
-                 to_port, 
-                 from_ip='localhost', 
-                 to_ip='*', 
-                 name='', 
-                #  save_dir='./', 
-                 save_dir='/nsls2/data/cms/shared/config/bluesky/profile_collection/users/2026-1/KChen-Wiegart/2026C1/',
-                 verbosity=4, **kwargs):
+    def __init__(self, from_port, to_port, from_ip='localhost', to_ip='*', name='', save_dir='./', verbosity=4, **kwargs):
 
         # Save these in case we want to check them later
         self.from_ip = from_ip
@@ -139,12 +131,11 @@ class CustomQueue():
         
         else:
             self.msg('Waiting for data/command ({})...'.format(self.now()), 4, 1)
-            print(f'get check 1')
             if use_flags:
                 data = self.from_socket.recv_pyobj(flags=flags)
             else:
                 data = self.from_socket.recv_pyobj()
-            print(f'get check 2')
+            
             if isinstance(data, (list, tuple, np.ndarray)):
                 self.msg('Received: list length {}'.format(len(data)), 4, 2)
             else:
@@ -157,8 +148,8 @@ class CustomQueue():
 
 
     def publish(self, data, save=True):
-        # message = '{} {}'.format(self.name, data)
-        # self.to_socket.send(message)
+        #message = '{} {}'.format(self.name, data)
+        #self.to_socket.send(message)
         
         self.msg('Sending data/command ({})...'.format(self.now()), 4, 1)
         self.to_socket.send_pyobj(data)
@@ -166,8 +157,6 @@ class CustomQueue():
 
         if save:
             np.save('{}/{}-sent.npy'.format(self.save_dir, self.name), data, allow_pickle=True)
-            os.chmod('{}/{}-sent.npy'.format(self.save_dir, self.name),0o777)
-            print('Saved to {}/{}-sent.npy'.format(self.save_dir, self.name))
         
         
     def interrupted(self):
@@ -331,10 +320,7 @@ c = {
 
 
 class Queue_decision(CustomQueue): # gpCAM
-    def __init__(self, from_port=c['analyze']['port'], to_port=c['decision']['port'], from_ip=c['analyze']['ip'], to_ip=c['decision']['ip'], name='decision', 
-                #  save_dir='./', 
-                 save_dir='/nsls2/data/cms/shared/config/bluesky/profile_collection/users/2026-1/KChen-Wiegart/2026C1',
-                 verbosity=VERBOSITY, **kwargs):
+    def __init__(self, from_port=c['analyze']['port'], to_port=c['decision']['port'], from_ip=c['analyze']['ip'], to_ip=c['decision']['ip'], name='decision', save_dir='./', verbosity=VERBOSITY, **kwargs):
         super().__init__(from_port=from_port, to_port=to_port, from_ip=from_ip, to_ip=to_ip, name=name, save_dir=save_dir, verbosity=verbosity, **kwargs)
         
     def get(self, save=True, check_interrupted=False, force_load=False, flags:int = 0, use_flags=False):
